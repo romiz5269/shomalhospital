@@ -1,0 +1,1 @@
+"""Hospital authentication microservice."""

@@ -1,0 +1,86 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+  output               = "../.venv/Lib/site-packages/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BlogPost {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  titleFa       String
+  titleEn       String?
+  excerptFa     String?
+  excerptEn     String?
+  contentFa     String?
+  contentEn     String?
+  coverImageUrl String?
+  videoUrl      String?
+  category      String?
+  tags          String[]
+  isPublished   Boolean   @default(false)
+  publishedAt   DateTime?
+  viewCount     Int       @default(0)
+  isFeatured    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  authorId      String?
+  authorName    String?
+
+  @@index([isPublished, isActive, deletedAt])
+  @@index([isFeatured])
+  @@index([category])
+  @@index([publishedAt])
+  @@map("blog_posts")
+}
+
+model SiteSettings {
+  id              String   @id @default("default")
+  hospitalNameFa  String   @default("بیمارستان شمال")
+  hospitalNameEn  String   @default("Shomal Hospital")
+  heroVideoUrl    String?
+  heroPosterUrl   String?
+  heroTitleFa     String   @default("در ستایش زندگی...")
+  heroTitleEn     String   @default("In Celebration of Life...")
+  heroSubtitleFa  String?
+  heroSubtitleEn  String?
+  heroBadgeFa     String?
+  heroBadgeEn     String?
+  phone           String?
+  addressFa       String?
+  addressEn       String?
+  homepageBlocks  Json     @default("[]")
+  updatedAt       DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+model Doctor {
+  id             String    @id @default(cuid())
+  nameFa         String
+  nameEn           String?
+  specialtyFa    String
+  specialtyEn    String?
+  departmentCode String?
+  imageUrl       String?
+  bioFa          String?
+  bioEn          String?
+  isActive       Boolean   @default(true)
+  isFeatured     Boolean   @default(false)
+  sortOrder      Int       @default(0)
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([isActive, deletedAt])
+  @@index([isFeatured])
+  @@index([departmentCode])
+  @@map("doctors")
+}

@@ -1,0 +1,21 @@
+services:
+  postgres-appointments:
+    image: postgres:16-alpine
+    container_name: hospital-postgres-appointments
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: appointments
+      POSTGRES_PASSWORD: appointments_secret
+      POSTGRES_DB: shomal_appointments
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres_appointments_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appointments -d shomal_appointments"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_appointments_data:

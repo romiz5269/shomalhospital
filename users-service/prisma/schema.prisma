@@ -1,0 +1,99 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Hospital directory profile — linked to auth via authUserId (JWT.sub)
+model UserProfile {
+  id              String    @id @default(cuid())
+  authUserId      String    @unique
+  phone           String    @unique
+  nationalId      String?   @unique
+  email           String?
+  firstName       String?
+  lastName        String?
+  fatherName      String?
+  gender          String?
+  birthDate       DateTime?
+  bloodType       String?
+  fileNumber      String?   @unique
+  personType      String    @default("patient")
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+  jobTitle        String?
+  insuranceType   String?
+  insuranceNumber String?
+  address         String?
+  city            String?   @default("Sari")
+  province        String?   @default("Mazandaran")
+  postalCode      String?
+  emergencyName   String?
+  emergencyPhone  String?
+  avatarUrl       String?
+  notes           String?
+  isActive        Boolean   @default(true)
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdById     String?
+  updatedById     String?
+
+  adminNotes AdminNote[]
+  audits     AuditLog[]  @relation("AuditSubject")
+
+  @@index([personType])
+  @@index([departmentId])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("user_profiles")
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  nameFa      String
+  nameEn      String?
+  description String?
+  floor       String?
+  phoneExt    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users UserProfile[]
+
+  @@map("departments")
+}
+
+model AdminNote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("admin_notes")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String
+  action     String
+  subjectId  String?
+  subject    UserProfile? @relation("AuditSubject", fields: [subjectId], references: [id], onDelete: SetNull)
+  detail     String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([subjectId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

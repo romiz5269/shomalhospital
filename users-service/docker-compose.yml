@@ -1,0 +1,21 @@
+services:
+  postgres-users:
+    image: postgres:16-alpine
+    container_name: hospital-postgres-users
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: users
+      POSTGRES_PASSWORD: users_secret
+      POSTGRES_DB: shomal_users
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_users_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U users -d shomal_users"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_users_data:

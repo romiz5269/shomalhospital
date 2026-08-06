@@ -1,0 +1,48 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+  output               = "../.venv/Lib/site-packages/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AppointmentStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+  no_show
+}
+
+model Appointment {
+  id                String            @id @default(cuid())
+  patientAuthUserId String
+  patientPhone      String?
+  patientName       String?
+  doctorAuthUserId  String?
+  doctorId          String?
+  doctorName        String?
+  departmentCode    String?
+  departmentName    String?
+  scheduledAt       DateTime
+  durationMin       Int               @default(30)
+  status            AppointmentStatus @default(pending)
+  notes             String?
+  reason            String?
+  isActive          Boolean           @default(true)
+  deletedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  createdById       String?
+  updatedById       String?
+
+  @@index([patientAuthUserId])
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("appointments")
+}

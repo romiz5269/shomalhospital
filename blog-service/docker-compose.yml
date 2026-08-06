@@ -1,0 +1,21 @@
+services:
+  postgres-blog:
+    image: postgres:16-alpine
+    container_name: hospital-postgres-blog
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: blog
+      POSTGRES_PASSWORD: blog_secret
+      POSTGRES_DB: shomal_blog
+    ports:
+      - "5438:5432"
+    volumes:
+      - postgres_blog_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blog -d shomal_blog"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_blog_data:

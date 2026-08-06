@@ -1,0 +1,35 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: hospital-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - gateway_redis_data:/data
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --tcp-backlog
+      - "511"
+      - --timeout
+      - "0"
+      - --tcp-keepalive
+      - "60"
+      - --hz
+      - "10"
+      - --dynamic-hz
+      - "yes"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  gateway_redis_data:

@@ -1,0 +1,67 @@
+# Production infra: Postgres auth + Postgres users + Redis
+# Apps (auth/users) run via start-prod.ps1 or Dockerfiles — gateway NOT modified.
+services:
+  postgres-auth:
+    image: postgres:16-alpine
+    container_name: hospital-postgres-auth
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-change_me_auth}
+      POSTGRES_DB: shomal_auth
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_auth_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth -d shomal_auth"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-users:
+    image: postgres:16-alpine
+    container_name: hospital-postgres-users
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: users
+      POSTGRES_PASSWORD: ${USERS_DB_PASSWORD:-change_me_users}
+      POSTGRES_DB: shomal_users
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_users_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U users -d shomal_users"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: hospital-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:-change_me_redis}
+      - --maxmemory
+      - 512mb
+      - --maxmemory-policy
+      - allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - hospital_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-change_me_redis}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_auth_data:
+  postgres_users_data:
+  hospital_redis_data:

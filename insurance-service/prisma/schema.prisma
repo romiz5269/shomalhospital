@@ -1,0 +1,37 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Iranian insurance providers accepted at Shomal Hospital
+model InsuranceProvider {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  nameFa        String
+  nameEn        String?
+  descriptionFa String?
+  descriptionEn String?
+  logoUrl       String?
+  websiteUrl    String?
+  phone         String?
+  sortOrder     Int       @default(0)
+  isActive      Boolean   @default(true)
+  isFeatured    Boolean   @default(false)
+  deletedAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  createdById   String?
+  updatedById   String?
+
+  @@index([isActive])
+  @@index([isFeatured])
+  @@index([sortOrder])
+  @@index([deletedAt])
+  @@map("insurance_providers")
+}

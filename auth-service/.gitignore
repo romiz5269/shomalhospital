@@ -1,0 +1,15 @@
+.env
+.env.production
+otp-last.txt
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+keys/*.pem
+prisma/migrations/
+*.egg-info/
+dist/
+build/
+.ruff_cache/

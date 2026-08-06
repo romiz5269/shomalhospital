@@ -1,0 +1,206 @@
+{
+  "meta": {
+    "title": "Shomal Hospital | بیمارستان شمال",
+    "description": "Shomal Hospital — specialist healthcare in Amol, Mazandaran"
+  },
+  "brand": {
+    "name": "Shomal Hospital",
+    "nameFa": "بیمارستان شمال",
+    "tagline": "SPECIALTY CARE",
+    "taglineFa": "SHOMAL HOSPITAL"
+  },
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "doctors": "Doctors",
+    "education": "Education",
+    "guide": "Guide",
+    "jobs": "Careers",
+    "international": "International",
+    "blog": "News",
+    "insurance": "Insurance",
+    "login": "Sign In",
+    "logout": "Logout",
+    "account": "My Account",
+    "appointment": "Appointments"
+  },
+  "hero": {
+    "badge": "Shomal Specialty Hospital — Amol",
+    "title": "In praise of life...",
+    "subtitle": "Shomal Hospital — advanced specialty care in northern Iran with modern facilities, expert staff, and 24/7 services.",
+    "cta": "Book Appointment",
+    "loginCta": "Patient Portal",
+    "watch": "Watch video"
+  },
+  "services": {
+    "title": "Quick Access to Services",
+    "enter": "Enter",
+    "onlineResults": {
+      "title": "Online Results",
+      "desc": "Lab and imaging reports"
+    },
+    "clinicSchedule": {
+      "title": "Clinic Schedule",
+      "desc": "Specialist visit times"
+    },
+    "staffPortal": {
+      "title": "Staff Portal",
+      "desc": "Hospital staff login"
+    },
+    "onlineAppointment": {
+      "title": "Online Appointment",
+      "desc": "Book 24/7 without visiting"
+    }
+  },
+  "stats": {
+    "sectionTitle": "Shomal Hospital at a Glance",
+    "sectionLabel": "STATISTICS",
+    "beds": "Active Beds",
+    "doctors": "Specialists",
+    "departments": "Departments",
+    "years": "Years Experience"
+  },
+  "insurance": {
+    "title": "Our Partner Insurances",
+    "viewAll": "View All",
+    "empty": "Insurance list will be updated soon."
+  },
+  "blog": {
+    "title": "News & Articles",
+    "pageDesc": "Latest news, events and health education from Shomal Hospital — Amol",
+    "searchPlaceholder": "Search news and articles...",
+    "readMore": "Read More",
+    "viewAll": "All News",
+    "empty": "No posts published yet."
+  },
+  "about": {
+    "title": "Shomal Hospital — specialist healthcare reference",
+    "statementTitle": "Our care family statement",
+    "statement": "We believe goodness guides everything we do. Our mission is patient-centered care, human dignity, and specialist services without discrimination.",
+    "location": "Shomal Hospital — Amol, Mazandaran"
+  },
+  "auth": {
+    "loginTitle": "Sign In",
+    "loginSubtitle": "Welcome to Shomal Hospital patient portal",
+    "signupTitle": "Patient Registration",
+    "signupSubtitle": "Create an account and book appointments",
+    "phone": "Mobile number",
+    "password": "Password",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "otpCode": "Verification code",
+    "passwordTab": "Password",
+    "otpTab": "OTP Login",
+    "loginBtn": "Sign In",
+    "signupBtn": "Register",
+    "sendOtp": "Send verification code",
+    "verifyOtp": "Verify & Sign In",
+    "loginLink": "Sign In",
+    "signupLink": "Register",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already registered?",
+    "loading": "Please wait...",
+    "loginFailed": "Login failed",
+    "rateLimited": "Too many login attempts. Please wait one minute and try again.",
+    "devAdminHint": "CMS admin login: 09000000000 / Admin@12345",
+    "networkError": "Cannot reach the server. Make sure the gateway is running on port 8080.",
+    "signupFailed": "Registration failed",
+    "otpFailed": "Failed to send OTP",
+    "devOtp": "Dev OTP (auth terminal)"
+  },
+  "appointments": {
+    "title": "Online Appointments",
+    "welcome": "Hello,",
+    "bookNew": "Book New Appointment",
+    "myAppointments": "My Appointments",
+    "department": "Department / Clinic",
+    "date": "Date",
+    "time": "Time",
+    "reason": "Reason for visit",
+    "reasonPlaceholder": "e.g. general checkup, follow-up...",
+    "bookBtn": "Book Appointment",
+    "cancel": "Cancel",
+    "empty": "No appointments yet",
+    "bookSuccess": "Appointment booked successfully",
+    "bookFailed": "Failed to book appointment",
+    "cancelFailed": "Failed to cancel",
+    "loadFailed": "Failed to load appointments",
+    "futureOnly": "Date must be in the future",
+    "loading": "Processing...",
+    "cancelNote": "Cancelled by patient",
+    "statusPending": "Pending",
+    "statusConfirmed": "Confirmed",
+    "statusCancelled": "Cancelled",
+    "statusCompleted": "Completed"
+  },
+  "account": {
+    "subtitle": "Patient portal",
+    "verified": "Verified account",
+    "notVerified": "Pending verification",
+    "myAppointments": "My Appointments",
+    "logout": "Sign Out"
+  },
+  "topbar": {
+    "phone": "011-4422 — 24/7 Call Center",
+    "hours": "ER 24/7 | Admission 8AM–8PM",
+    "appointment": "Online Appointment",
+    "login": "Patient Login"
+  },
+  "steps": {
+    "title": "Appointment in three steps!",
+    "subtitle": "Get your appointment online in the fastest way — three steps to your visit",
+    "start": "Start",
+    "cta": "Get Online Appointment",
+    "step1": { "title": "Select doctor & specialty", "desc": "Choose your doctor and department from the list" },
+    "step2": { "title": "Register in the system", "desc": "Sign up in the shortest time possible" },
+    "step3": { "title": "Confirm & payment", "desc": "Confirm your slot and pay the visit fee online" }
+  },
+  "eServices": {
+    "label": "E-Services",
+    "title": "Shomal Hospital Electronic Services",
+    "subtitle": "Modern and fast — all possible services for our dear patients",
+    "labResults": { "title": "Lab Results", "desc": "Receive test results online" },
+    "clinicSchedule": { "title": "Weekly Clinic Schedule", "desc": "View doctors working hours" },
+    "staffPortal": { "title": "Personnel Portal", "desc": "Staff login to the system" },
+    "onlineAppointment": { "title": "Online Appointment", "desc": "Book appointments 24/7" }
+  },
+  "doctors": {
+    "label": "Doctors",
+    "title": "Popular Doctors",
+    "viewAll": "View All",
+    "book": "Book Appointment",
+    "featured": "Featured Physician",
+    "pageTitle": "Shomal Hospital Doctors",
+    "pageDesc": "Specialist physicians — click to book an appointment"
+  },
+  "news": {
+    "label": "Media",
+    "title": "News & Blog",
+    "viewAll": "View All",
+    "readMore": "Read More",
+    "empty": "No items found",
+    "bookAfterReading": "Book an appointment after reading",
+    "tabs": { "all": "All", "news": "News", "blog": "Blog", "event": "Events", "education": "Education" }
+  },
+  "faq": {
+    "label": "Guide",
+    "title": "Frequently Asked Questions",
+    "q1": { "q": "How do I book online?", "a": "Sign up or log in, then choose department and time in the appointments section." },
+    "q2": { "q": "Where are lab results?", "a": "After login, online results are available in your patient portal." },
+    "q3": { "q": "Which insurances are accepted?", "a": "See the full list in the Insurance section." },
+    "q4": { "q": "Admission hours?", "a": "Outpatient 8AM–8PM — Emergency 24/7." },
+    "q5": { "q": "Address & contact?", "a": "Amol, Mazandaran — Phone: 011-4422" }
+  },
+  "footer": {
+    "phone": "011-4422",
+    "address": "Amol, Mazandaran — Shomal Hospital",
+    "rights": "All rights reserved — Shomal Hospital"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Failed to load data",
+    "langFa": "فارسی",
+    "langEn": "English"
+  }
+}
