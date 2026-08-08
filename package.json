@@ -1,0 +1,22 @@
+{
+  "name": "hospital-ticket-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm run db:up && npm run db:wait && npm run db:push && concurrently -n api,web,admin -c teal,blue,magenta \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:admin\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:admin": "npm run dev --prefix admin",
+    "install:all": "npm install --prefix frontend && npm install --prefix admin",
+    "install:backend": "python -m venv backend\\.venv && backend\\.venv\\Scripts\\python -m pip install -r backend\\requirements.txt",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:wait": "powershell -NoProfile -Command \"$ok=$false; 1..40 | ForEach-Object { try { $r = docker compose exec -T postgres pg_isready -U ticket_admin -d hospital_tickets 2>$null; if ($LASTEXITCODE -eq 0) { $ok=$true; break } } catch {} ; Start-Sleep -Seconds 1 }; if (-not $ok) { throw 'Postgres not ready' }\"",
+    "db:push": "npm run db:push --prefix backend",
+    "setup": "npm run install:all && npm run install:backend && npm run db:up && npm run db:wait && npm run db:push",
+    "stress": "backend\\.venv\\Scripts\\python backend\\scripts\\stress_both_panels.py --users 40 --rounds 12 --workers 50"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "hospital-ticket-backend",
+  "version": "2.2.0",
+  "private": true,
+  "scripts": {
+    "dev": ".venv\\Scripts\\python -m uvicorn app.main:socket_app --reload --host 0.0.0.0 --port 4000",
+    "start": ".venv\\Scripts\\python -m uvicorn app.main:socket_app --host 0.0.0.0 --port 4000 --workers 4 --limit-concurrency 2000 --timeout-keep-alive 15 --backlog 2048",
+    "db:push": ".venv\\Scripts\\python -m app.init_db",
+    "stress": ".venv\\Scripts\\python scripts\\stress_both_panels.py --users 40 --rounds 12 --workers 50"
+  }
+}
