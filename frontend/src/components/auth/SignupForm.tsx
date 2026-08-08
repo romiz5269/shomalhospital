@@ -2,18 +2,17 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter, Link } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/context/AuthProvider";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { UserPlus } from "lucide-react";
+import { CheckCircle2, UserPlus } from "lucide-react";
 
 export default function SignupForm() {
   const t = useTranslations("auth");
   const { register, verifySignupOtp, requestOtpCode } = useAuth();
-  const router = useRouter();
 
-  const [step, setStep] = useState<"form" | "otp">("form");
+  const [step, setStep] = useState<"form" | "otp" | "pending">("form");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -42,7 +41,7 @@ export default function SignupForm() {
           if (hint) setOtpHint(hint);
         }
       } else {
-        router.push("/appointments");
+        setStep("pending");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("signupFailed"));
@@ -56,8 +55,12 @@ export default function SignupForm() {
     setError("");
     setLoading(true);
     try {
-      await verifySignupOtp(phone, otp);
-      router.push("/appointments");
+      const result = await verifySignupOtp(phone, otp);
+      if (result === "pending_approval") {
+        setStep("pending");
+      } else {
+        setStep("pending");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("otpFailed"));
     } finally {
@@ -66,10 +69,10 @@ export default function SignupForm() {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[2rem] glass-premium p-8 sm:p-10 shadow-2xl shadow-shomal-primary/10">
+    <div className="relative overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] glass-premium p-6 sm:p-10 shadow-2xl shadow-shomal-primary/10">
       <div className="relative">
-        <h1 className="text-2xl font-bold text-shomal-primary mb-2">{t("signupTitle")}</h1>
-        <p className="text-sm text-gray-500 mb-8">{t("signupSubtitle")}</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-shomal-primary mb-2">{t("signupTitle")}</h1>
+        <p className="text-sm text-gray-500 mb-6 sm:mb-8">{t("signupSubtitle")}</p>
 
         {error && (
           <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
@@ -77,9 +80,23 @@ export default function SignupForm() {
           </div>
         )}
 
-        {step === "form" ? (
+        {step === "pending" ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-6 text-center">
+            <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-emerald-600" />
+            <p className="font-bold text-emerald-900">ثبت‌نام دریافت شد</p>
+            <p className="mt-2 text-sm text-emerald-800 leading-7">
+              شماره موبایل تأیید شد. پس از تأیید ادمین سیستم می‌توانید وارد شوید.
+            </p>
+            <Link
+              href="/login"
+              className="mt-5 inline-flex font-semibold text-[#003b8e] hover:underline"
+            >
+              بازگشت به ورود
+            </Link>
+          </div>
+        ) : step === "form" ? (
           <form onSubmit={onSignup} className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label={t("firstName")} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
               <Input label={t("lastName")} value={lastName} onChange={(e) => setLastName(e.target.value)} />
             </div>
@@ -104,12 +121,14 @@ export default function SignupForm() {
           </form>
         )}
 
-        <p className="mt-6 text-center text-sm text-gray-500">
-          {t("hasAccount")}{" "}
-          <Link href="/login" className="font-semibold text-shomal-primary hover:underline">
-            {t("loginLink")}
-          </Link>
-        </p>
+        {step !== "pending" && (
+          <p className="mt-6 text-center text-sm text-gray-500">
+            {t("hasAccount")}{" "}
+            <Link href="/login" className="font-semibold text-shomal-primary hover:underline">
+              {t("loginLink")}
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   );

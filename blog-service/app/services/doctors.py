@@ -21,6 +21,7 @@ def _to_out(row) -> DoctorOut:
         image_url=row.imageUrl,
         bio_fa=row.bioFa,
         bio_en=row.bioEn,
+        rating=float(getattr(row, "rating", 4.5) or 4.5),
         is_active=row.isActive,
         is_featured=row.isFeatured,
         sort_order=row.sortOrder,
@@ -67,6 +68,7 @@ class DoctorService:
         page: int = 1,
         page_size: int = 20,
         q: str | None = None,
+        department_code: str | None = None,
         include_deleted: bool = False,
     ) -> DoctorListResponse:
         page = max(page, 1)
@@ -74,6 +76,8 @@ class DoctorService:
         where: dict = {}
         if not include_deleted:
             where["deletedAt"] = None
+        if department_code:
+            where["departmentCode"] = department_code
         if q:
             where["OR"] = [
                 {"nameFa": {"contains": q, "mode": "insensitive"}},
@@ -106,6 +110,7 @@ class DoctorService:
                 "imageUrl": payload.image_url,
                 "bioFa": payload.bio_fa,
                 "bioEn": payload.bio_en,
+                "rating": payload.rating,
                 "isActive": payload.is_active,
                 "isFeatured": payload.is_featured,
                 "sortOrder": payload.sort_order,
@@ -128,6 +133,7 @@ class DoctorService:
             "image_url": "imageUrl",
             "bio_fa": "bioFa",
             "bio_en": "bioEn",
+            "rating": "rating",
             "is_active": "isActive",
             "is_featured": "isFeatured",
             "sort_order": "sortOrder",

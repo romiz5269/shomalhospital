@@ -7,20 +7,16 @@ import { useAuth } from "@/context/AuthProvider";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import {
-  createDoctor,
-  deleteDoctor,
   fetchAdminDoctors,
   fetchAdminSite,
   isSiteAdmin,
   updateAdminSite,
   uploadCmsMedia,
-  updateDoctor,
   updateHomepageBlocks,
   type DoctorOut,
   type HomepageBlock,
   type PublicSite,
 } from "@/lib/cms-client";
-import { DEPARTMENTS } from "@/lib/config";
 import { API } from "@/lib/config";
 import { getAccessToken } from "@/lib/auth-client";
 import {
@@ -30,14 +26,17 @@ import {
   Newspaper,
   Loader2,
   Save,
-  Plus,
+  Shield,
 } from "lucide-react";
 import clsx from "clsx";
 import PageBuilder from "@/components/admin/PageBuilder";
+import DoctorsManager from "@/components/admin/DoctorsManager";
+import InsurancesManager from "@/components/admin/InsurancesManager";
+import ThemeToggle from "@/components/ui/ThemeToggle";
 import type { BlogPostPublic } from "@/lib/api";
 import { Upload, Film } from "lucide-react";
 
-type Tab = "site" | "pages" | "doctors" | "blog";
+type Tab = "site" | "pages" | "doctors" | "insurances" | "blog";
 
 export default function AdminPanel() {
   const t = useTranslations("admin");
@@ -59,11 +58,6 @@ export default function AdminPanel() {
   const [heroVideo, setHeroVideo] = useState("");
   const [heroPoster, setHeroPoster] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [newDoctor, setNewDoctor] = useState({
-    name_fa: "",
-    specialty_fa: "",
-    department_code: "OPD",
-  });
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -107,7 +101,7 @@ export default function AdminPanel() {
             ? "نشست منقضی شده — دوباره وارد شوید."
             : "Session expired — please sign in again.",
         );
-        router.push("/login");
+        router.push("/admin/login");
       } else {
         setError(msg);
       }
@@ -119,7 +113,7 @@ export default function AdminPanel() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push("/login");
+      router.push("/admin/login");
       return;
     }
     if (!isSiteAdmin(user)) {
@@ -168,68 +162,47 @@ export default function AdminPanel() {
     setError("");
     setMessage("");
     try {
+      if (file.size > 80 * 1024 * 1024) {
+        throw new Error(locale === "fa" ? "حجم فایل بیش از ۸۰ مگابایت است." : "File exceeds 80MB.");
+      }
       const res = await uploadCmsMedia(file);
+      if (!res?.url) throw new Error(locale === "fa" ? "آدرس فایل برنگشت." : "Upload returned no URL.");
+
       const nextVideo = res.media_type === "video" ? res.url : heroVideo;
       const nextPoster = res.media_type === "image" ? res.url : heroPoster;
       if (res.media_type === "video") setHeroVideo(res.url);
       else setHeroPoster(res.url);
 
-      // Auto-publish so homepage picks up the new media immediately
+      // Persist to DB — CMS URL must win over env/Mixkit fallback on homepage
       const updated = await updateAdminSite({
         hero_title_fa: heroTitle,
         hero_subtitle_fa: heroSubtitle,
-        hero_video_url: nextVideo,
-        hero_poster_url: nextPoster,
+        hero_video_url: nextVideo || undefined,
+        hero_poster_url: nextPoster || undefined,
       });
       setSite(updated);
+      if (updated.hero_video_url) setHeroVideo(updated.hero_video_url);
+      if (updated.hero_poster_url) setHeroPoster(updated.hero_poster_url);
       setMessage(
         locale === "fa"
           ? res.media_type === "video"
-            ? "ویدیو آپلود و روی سایت ذخیره شد ✓"
+            ? "ویدیو آپلود و در دیتابیس ذخیره شد ✓ — صفحه اصلی را رفرش کنید."
             : "پوستر آپلود و ذخیره شد ✓"
-          : "Media uploaded and saved ✓",
+          : "Media uploaded and saved to CMS ✓",
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
-      if (msg === "CMS_NETWORK_ERROR") {
+      if (msg === "CMS_NETWORK_ERROR" || msg === "NOT_AUTHENTICATED") {
         setError(
           locale === "fa"
-            ? "آپلود ناموفق — گیت‌وی (8080) و CMS (5005) را چک کنید."
-            : "Upload failed — check gateway and CMS.",
+            ? "آپلود ناموفق — وارد CMS شوید و گیت‌وی (8080) + blog (5005) را چک کنید."
+            : "Upload failed — sign in and check gateway/CMS.",
         );
       } else {
         setError(msg);
       }
     } finally {
       setUploading(false);
-    }
-  };
-
-  const onAddDoctor = async () => {
-    if (!newDoctor.name_fa || !newDoctor.specialty_fa) return;
-    setSaving(true);
-    try {
-      await createDoctor(newDoctor);
-      setNewDoctor({ name_fa: "", specialty_fa: "", department_code: "OPD" });
-      const res = await fetchAdminDoctors();
-      setDoctors(res.items);
-      setMessage(t("saved"));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const onDeleteDoctor = async (id: string) => {
-    setSaving(true);
-    try {
-      await deleteDoctor(id);
-      setDoctors((prev) => prev.filter((d) => d.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -243,8 +216,11 @@ export default function AdminPanel() {
 
   if (!user || !isSiteAdmin(user)) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-20 text-center">
+      <div className="mx-auto max-w-lg px-4 py-20 text-center space-y-3">
         <p className="text-red-600 font-semibold">{t("accessDenied")}</p>
+        <a href="/fa/admin/login" className="inline-flex font-semibold text-shomal-primary hover:underline">
+          ورود به CMS
+        </a>
       </div>
     );
   }
@@ -253,6 +229,7 @@ export default function AdminPanel() {
     { id: "site", icon: LayoutDashboard, label: t("tabs.site") },
     { id: "pages", icon: Layers, label: t("tabs.pages") },
     { id: "doctors", icon: Stethoscope, label: t("tabs.doctors") },
+    { id: "insurances", icon: Shield, label: "بیمه‌ها" },
     { id: "blog", icon: Newspaper, label: t("tabs.blog") },
   ];
 
@@ -260,9 +237,12 @@ export default function AdminPanel() {
     <div className="min-h-screen mesh-bg">
       {tab !== "pages" && (
         <div className="gradient-shomal py-10 px-4 text-white">
-          <div className="mx-auto max-w-6xl">
-            <h1 className="text-3xl font-bold">{t("title")}</h1>
-            <p className="text-white/85 mt-2">{t("subtitle")}</p>
+          <div className="mx-auto max-w-6xl flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-bold">{t("title")}</h1>
+              <p className="text-white/85 mt-2">{t("subtitle")}</p>
+            </div>
+            <ThemeToggle />
           </div>
         </div>
       )}
@@ -340,8 +320,14 @@ export default function AdminPanel() {
             </div>
             <Input label={t("heroTitle")} value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} />
             <Input label={t("heroSubtitle")} value={heroSubtitle} onChange={(e) => setHeroSubtitle(e.target.value)} />
-            <Input label={t("heroVideo")} value={heroVideo} onChange={(e) => setHeroVideo(e.target.value)} dir="ltr" />
-            <Input label="آدرس پوستر ویدیو" value={heroPoster} onChange={(e) => setHeroPoster(e.target.value)} dir="ltr" />
+            {heroVideo ? (
+              <p className="text-xs text-muted break-all" dir="ltr">
+                Video: {heroVideo}
+              </p>
+            ) : (
+              <p className="text-xs text-amber-700">No video yet — upload an mp4 below.</p>
+            )}
+            <Input label="Poster URL" value={heroPoster} onChange={(e) => setHeroPoster(e.target.value)} dir="ltr" readOnly={false} />
 
             <div className="rounded-2xl border border-dashed border-shomal-primary/30 p-4 sm:p-5 bg-shomal-primary/5">
               <p className="text-sm font-semibold text-shomal-primary mb-3 flex items-center gap-2">
@@ -381,65 +367,9 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {tab === "doctors" && (
-          <div className="space-y-6">
-            <div className="glass-premium rounded-3xl p-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <Input
-                label="نام پزشک"
-                value={newDoctor.name_fa}
-                onChange={(e) => setNewDoctor((p) => ({ ...p, name_fa: e.target.value }))}
-              />
-              <Input
-                label="تخصص"
-                value={newDoctor.specialty_fa}
-                onChange={(e) => setNewDoctor((p) => ({ ...p, specialty_fa: e.target.value }))}
-              />
-              <div>
-                <label className="mb-2 block text-sm font-medium">بخش</label>
-                <select
-                  value={newDoctor.department_code}
-                  onChange={(e) => setNewDoctor((p) => ({ ...p, department_code: e.target.value }))}
-                  className="w-full rounded-2xl border border-shomal-border px-4 py-3.5 text-sm"
-                >
-                  {DEPARTMENTS.map((d) => (
-                    <option key={d.code} value={d.code}>{d.nameFa}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex items-end">
-                <Button onClick={onAddDoctor} disabled={saving} className="w-full">
-                  <Plus className="h-4 w-4" />
-                  {t("addDoctor")}
-                </Button>
-              </div>
-            </div>
+        {tab === "doctors" && <DoctorsManager />}
 
-            <div className="space-y-3">
-              {doctors.map((doc) => (
-                <div key={doc.id} className="glass-premium rounded-2xl p-4 flex flex-wrap justify-between gap-3">
-                  <div>
-                    <p className="font-bold">{doc.name_fa}</p>
-                    <p className="text-sm text-gray-600">{doc.specialty_fa}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        updateDoctor(doc.id, { is_featured: !doc.is_featured }).then(loadAll)
-                      }
-                    >
-                      {doc.is_featured ? "★ featured" : "☆ feature"}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => onDeleteDoctor(doc.id)}>
-                      {t("delete")}
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {tab === "insurances" && <InsurancesManager />}
 
         {tab === "blog" && (
           <div className="space-y-3">

@@ -38,11 +38,12 @@ export type BlogListResponse = {
 export async function fetchFeaturedInsurances(): Promise<InsurancePublic[]> {
   try {
     const res = await fetch(`${insuranceBase}/public`, {
-      next: { revalidate: 60 },
-      signal: AbortSignal.timeout(1500),
+      cache: "no-store",
+      signal: AbortSignal.timeout(6000),
     });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }
@@ -51,11 +52,12 @@ export async function fetchFeaturedInsurances(): Promise<InsurancePublic[]> {
 export async function fetchAllInsurances(): Promise<InsurancePublic[]> {
   try {
     const res = await fetch(`${insuranceBase}/public/all`, {
-      next: { revalidate: 60 },
-      signal: AbortSignal.timeout(1500),
+      cache: "no-store",
+      signal: AbortSignal.timeout(6000),
     });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }

@@ -16,13 +16,16 @@ function Stop-PortListener([int]$port) {
     }
 }
 
+. (Join-Path $PSScriptRoot "..\..\scripts\docker-safe.ps1")
 Write-Host "`n[1/4] Docker: Postgres insurance (:5437)" -ForegroundColor Cyan
-docker compose up -d postgres-insurance
-docker compose ps
+Ensure-InfraContainer -Name "hospital-postgres-insurance" -ComposeUpArgs @("compose","up","-d","postgres-insurance") | Out-Null
 
 Write-Host "`n[2/4] Wait healthy..." -ForegroundColor Cyan
+$pg = "unknown"
 for ($i = 1; $i -le 30; $i++) {
+    $ErrorActionPreference = "Continue"
     $pg = docker inspect hospital-postgres-insurance --format "{{.State.Health.Status}}" 2>$null
+    $ErrorActionPreference = "Stop"
     if ($pg -eq "healthy") { break }
     Start-Sleep 2
 }
@@ -51,4 +54,4 @@ Write-Host "`n[4/4] Start Insurance on :$Port" -ForegroundColor Green
 Stop-PortListener $Port
 Write-Host "  Docs:  http://127.0.0.1:$Port/docs" -ForegroundColor Yellow
 Write-Host "  Site:  http://127.0.0.1:8080/api/v1/insurance/... (via gateway + JWT)`n" -ForegroundColor Yellow
-uvicorn app.main:app --host 127.0.0.1 --port $Port --reload
+uvicorn app.main:app --host 127.0.0.1 --port $Port

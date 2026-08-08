@@ -161,6 +161,8 @@ class AdminUserService:
             role = await db.role.find_unique(where={"name": payload.role})
             if not role:
                 raise HTTPException(status_code=400, detail=f"Unknown role '{payload.role}'")
+            # Replace roles so CMS/admin grant is explicit (not stacked forever)
+            await db.userrole.delete_many(where={"userId": user_id})
             await rbac_service.assign_role_to_user(user_id, payload.role)
 
         return await auth_service._to_public(user_id)

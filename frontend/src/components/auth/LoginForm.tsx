@@ -9,12 +9,11 @@ import { Lock, Smartphone, Sparkles } from "lucide-react";
 import clsx from "clsx";
 import { Link } from "@/i18n/navigation";
 import { useLocale } from "next-intl";
-import { isSiteAdmin } from "@/lib/cms-client";
 
 const COPY = {
   fa: {
     loginTitle: "ورود به حساب",
-    loginSubtitle: "به پورتال بیمارستان شمال خوش آمدید",
+    loginSubtitle: "به پورتال بیماران بیمارستان شمال خوش آمدید",
     passwordTab: "رمز عبور",
     otpTab: "ورود با OTP",
     phone: "شماره موبایل",
@@ -26,11 +25,10 @@ const COPY = {
     loading: "لطفاً صبر کنید...",
     loginFailed: "ورود ناموفق — شماره یا رمز اشتباه است",
     rateLimited: "تلاش‌های زیاد برای ورود. یک دقیقه صبر کنید.",
-    networkError: "اتصال به سرور برقرار نشد. گیت‌وی (پورت 8080) را اجرا کنید.",
+    networkError: "اتصال به سرور برقرار نشد.",
+    pendingApproval: "حساب شما هنوز توسط ادمین تأیید نشده است.",
     otpFailed: "خطا در ارسال OTP",
     devOtp: "کد تست (ترمینال auth)",
-    adminHint: "ورود ادمین CMS:",
-    adminCreds: "09000000000 / Admin@12345",
     noAccount: "حساب ندارید؟",
     signupLink: "ثبت‌نام",
   },
@@ -48,11 +46,10 @@ const COPY = {
     loading: "Please wait...",
     loginFailed: "Login failed",
     rateLimited: "Too many login attempts. Please wait one minute.",
-    networkError: "Cannot reach the server. Make sure the gateway is running on port 8080.",
+    networkError: "Cannot reach the server.",
+    pendingApproval: "Your account is awaiting admin approval.",
     otpFailed: "Failed to send OTP",
     devOtp: "Dev OTP (auth terminal)",
-    adminHint: "CMS admin login:",
-    adminCreds: "09000000000 / Admin@12345",
     noAccount: "Don't have an account?",
     signupLink: "Register",
   },
@@ -73,18 +70,24 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const mapError = (msg: string) => {
+    if (msg === "NETWORK_ERROR") return t.networkError;
+    if (msg.includes("Too many")) return t.rateLimited;
+    if (msg.toLowerCase().includes("verified") || msg.includes("approval")) {
+      return t.pendingApproval;
+    }
+    return msg || t.loginFailed;
+  };
+
   const onSubmitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const user = await login(phone, password);
-      router.push(isSiteAdmin(user) ? "/admin" : "/appointments");
+      await login(phone, password);
+      router.push("/appointments");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t.loginFailed;
-      if (msg === "NETWORK_ERROR") setError(t.networkError);
-      else if (msg.includes("Too many")) setError(t.rateLimited);
-      else setError(msg);
+      setError(mapError(err instanceof Error ? err.message : t.loginFailed));
     } finally {
       setLoading(false);
     }
@@ -109,27 +112,27 @@ export default function LoginForm() {
     setError("");
     setLoading(true);
     try {
-      const user = await loginWithOtp(phone, otp);
-      router.push(isSiteAdmin(user) ? "/admin" : "/appointments");
+      await loginWithOtp(phone, otp);
+      router.push("/appointments");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.loginFailed);
+      setError(mapError(err instanceof Error ? err.message : t.loginFailed));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[2rem] glass-premium p-8 sm:p-10 shadow-2xl shadow-[#003b8e]/12">
+    <div className="relative overflow-hidden rounded-[1.5rem] sm:rounded-[2rem] glass-premium p-6 sm:p-10 shadow-2xl shadow-[#003b8e]/12">
       <div className="absolute -top-20 -start-20 h-40 w-40 rounded-full bg-[#5ba4d9]/20 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-16 -end-16 h-48 w-48 rounded-full bg-[#003b8e]/10 blur-3xl pointer-events-none" />
 
       <div className="relative">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-shomal text-white shadow-lg">
-            <Sparkles className="h-6 w-6" />
+        <div className="mb-6 sm:mb-8 flex items-center gap-3">
+          <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl gradient-shomal text-white shadow-lg shrink-0">
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div>
-            <h1 className="heading-on-glass text-2xl">{t.loginTitle}</h1>
+          <div className="min-w-0">
+            <h1 className="heading-on-glass text-xl sm:text-2xl">{t.loginTitle}</h1>
             <p className="text-sm text-muted">{t.loginSubtitle}</p>
           </div>
         </div>
@@ -139,7 +142,10 @@ export default function LoginForm() {
             <button
               key={key}
               type="button"
-              onClick={() => { setTab(key); setError(""); }}
+              onClick={() => {
+                setTab(key);
+                setError("");
+              }}
               className={clsx(
                 "flex-1 rounded-xl py-2.5 text-sm font-semibold transition-all",
                 tab === key
@@ -158,20 +164,23 @@ export default function LoginForm() {
           </div>
         )}
 
-        <div className="mb-4 rounded-xl border border-[#003b8e]/15 bg-[#003b8e]/5 px-4 py-3 text-xs text-[#334d6e]">
-          <p className="font-semibold text-[#003b8e]">{t.adminHint}</p>
-          <p className="mt-1 font-mono dir-ltr text-left" dir="ltr">{t.adminCreds}</p>
-          <p className="mt-1 text-[11px] text-muted">
-            {locale === "fa"
-              ? "بعد از ورود به /admin بروید — تب «سازنده صفحه»"
-              : "After login go to /admin — Page Builder tab"}
-          </p>
-        </div>
-
         {tab === "password" ? (
           <form onSubmit={onSubmitPassword} className="space-y-4">
-            <Input label={t.phone} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09123456789" dir="ltr" required />
-            <Input label={t.password} type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <Input
+              label={t.phone}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="09123456789"
+              dir="ltr"
+              required
+            />
+            <Input
+              label={t.password}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
             <Button type="submit" className="w-full !text-white font-bold" disabled={loading}>
               <Lock className="h-4 w-4" />
               {loading ? t.loading : t.loginBtn}
@@ -179,9 +188,21 @@ export default function LoginForm() {
           </form>
         ) : (
           <form onSubmit={onSubmitOtp} className="space-y-4">
-            <Input label={t.phone} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="09123456789" dir="ltr" required />
+            <Input
+              label={t.phone}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="09123456789"
+              dir="ltr"
+              required
+            />
             {!otpSent ? (
-              <Button type="button" className="w-full !text-white font-bold" onClick={onRequestOtp} disabled={loading || !phone}>
+              <Button
+                type="button"
+                className="w-full !text-white font-bold"
+                onClick={onRequestOtp}
+                disabled={loading || !phone}
+              >
                 <Smartphone className="h-4 w-4" />
                 {t.sendOtp}
               </Button>
@@ -192,7 +213,14 @@ export default function LoginForm() {
                     {t.devOtp}: <span className="font-mono font-bold">{otpHint}</span>
                   </p>
                 )}
-                <Input label={t.otpCode} value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="123456" dir="ltr" required />
+                <Input
+                  label={t.otpCode}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="123456"
+                  dir="ltr"
+                  required
+                />
                 <Button type="submit" className="w-full !text-white font-bold" disabled={loading}>
                   {loading ? t.loading : t.verifyOtp}
                 </Button>

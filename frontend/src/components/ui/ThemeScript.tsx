@@ -1,14 +1,2 @@
-import Script from "next/script";
-
-/** Runs before paint via next/script — avoids React 19 client script warning */
-export default function ThemeScript() {
-  return (
-    <Script
-      id="shomal-theme-init"
-      strategy="beforeInteractive"
-      dangerouslySetInnerHTML={{
-        __html: `(function(){try{var k='shomal_theme';var s=localStorage.getItem(k);var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var t=s||(d?'dark':'light');document.documentElement.classList.toggle('dark',t==='dark');}catch(e){}})();`,
-      }}
-    />
-  );
-}
+/** Inline theme bootstrap — use only from a Server Component layout via plain <script>. */
+export const THEME_INIT_SCRIPT = `(function(){try{var k='shomal_theme';var s=localStorage.getItem(k);var t=(s==='dark'||s==='light')?s:'light';document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.style.colorScheme=t;}catch(e){document.documentElement.classList.remove('dark');document.documentElement.style.colorScheme='light';}})();`;

@@ -1,4 +1,4 @@
-"""Create a verified admin user for bootstrap (phone + optional password)."""
+"""Create or reset verified admin user (phone + password)."""
 
 import asyncio
 import sys
@@ -21,7 +21,18 @@ async def main() -> None:
 
     user = await db.user.find_unique(where={"phone": phone})
     if user:
-        print(f"Admin already exists: {user.id}")
+        await db.user.update(
+            where={"id": user.id},
+            data={
+                "passwordHash": hash_password(password),
+                "isActive": True,
+                "isVerified": True,
+                "firstName": user.firstName or "System",
+                "lastName": user.lastName or "Admin",
+            },
+        )
+        await rbac_service.assign_role_to_user(user.id, "admin")
+        print(f"Admin password reset: {user.id}")
     else:
         user = await db.user.create(
             data={
@@ -36,8 +47,9 @@ async def main() -> None:
         )
         await rbac_service.assign_role_to_user(user.id, "admin")
         print(f"Admin created: {user.id}")
-        print(f"phone={phone} password={password}")
 
+    print(f"phone={phone}")
+    print(f"password={password}")
     await disconnect_db()
 
 

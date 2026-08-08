@@ -37,6 +37,7 @@ export type DoctorOut = {
   image_url: string | null;
   bio_fa: string | null;
   bio_en: string | null;
+  rating: number;
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
@@ -54,12 +55,23 @@ export type DoctorList = {
   items: DoctorOut[];
 };
 
-export function isSiteAdmin(user: {
+/** System console (port 2000) — full admin */
+export function isSystemAdmin(user: {
   roles?: string[];
   permissions?: string[];
 } | null): boolean {
   if (!user) return false;
   if (user.roles?.includes("admin")) return true;
+  return (user.permissions ?? []).includes("auth:manage");
+}
+
+/** CMS / page builder — needs pages permissions (after approval for cms role) */
+export function isSiteAdmin(user: {
+  roles?: string[];
+  permissions?: string[];
+} | null): boolean {
+  if (!user) return false;
+  if (user.roles?.includes("admin") || user.roles?.includes("cms")) return true;
   const perms = new Set(user.permissions ?? []);
   return ["pages:manage", "pages:write", "blog:manage", "auth:manage"].some((p) =>
     perms.has(p),
@@ -74,14 +86,29 @@ export function doctorDisplaySpecialty(locale: string, doc: DoctorOut) {
   return locale === "en" && doc.specialty_en ? doc.specialty_en : doc.specialty_fa;
 }
 
+/** Rewrite /uploads/* to same-origin Next proxy so :4000 hero video always loads. */
+function normalizeMediaUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.includes("mixkit.co") || url.includes("assets.mixkit")) return null;
+  const marker = "/uploads/";
+  const idx = url.indexOf(marker);
+  if (idx === -1) return url;
+  const name = url.slice(idx + marker.length).split("?")[0].replace(/^\/+/, "");
+  if (!name) return url;
+  return `/cms-media/uploads/${name}`;
+}
+
 export async function fetchPublicSite(): Promise<PublicSite | null> {
   try {
     const res = await fetch(`${API.blog}/public/site`, {
-      next: { revalidate: 30 },
-      signal: AbortSignal.timeout(1500),
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
-    return (await res.json()) as PublicSite;
+    const site = (await res.json()) as PublicSite;
+    site.hero_video_url = normalizeMediaUrl(site.hero_video_url);
+    site.hero_poster_url = normalizeMediaUrl(site.hero_poster_url);
+    return site;
   } catch {
     return null;
   }
@@ -95,8 +122,8 @@ export async function fetchPublicDoctors(params?: {
   if (params?.featured != null) qs.set("featured", String(params.featured));
   if (params?.department_code) qs.set("department_code", params.department_code);
   const res = await fetch(`${API.blog}/public/doctors?${qs}`, {
-    next: { revalidate: 60 },
-    signal: AbortSignal.timeout(1500),
+    cache: "no-store",
+    signal: AbortSignal.timeout(4000),
   });
   if (!res.ok) throw new Error("Failed to load doctors");
   return res.json();
@@ -143,8 +170,18 @@ export async function updateHomepageBlocks(blocks: HomepageBlock[]) {
   });
 }
 
-export async function fetchAdminDoctors(page = 1) {
-  return cmsAdminFetch<DoctorList>(`/admin/doctors?page=${page}&page_size=50`);
+export async function fetchAdminDoctors(params?: {
+  page?: number;
+  q?: string;
+  department_code?: string;
+}) {
+  const sp = new URLSearchParams({
+    page: String(params?.page ?? 1),
+    page_size: "50",
+  });
+  if (params?.q) sp.set("q", params.q);
+  if (params?.department_code) sp.set("department_code", params.department_code);
+  return cmsAdminFetch<DoctorList>(`/admin/doctors?${sp}`);
 }
 
 export async function createDoctor(payload: {
@@ -155,6 +192,8 @@ export async function createDoctor(payload: {
   department_code?: string;
   image_url?: string;
   bio_fa?: string;
+  bio_en?: string;
+  rating?: number;
   is_featured?: boolean;
   sort_order?: number;
 }) {
@@ -174,6 +213,8 @@ export async function updateDoctor(
     department_code: string;
     image_url: string;
     bio_fa: string;
+    bio_en: string;
+    rating: number;
     is_featured: boolean;
     is_active: boolean;
     sort_order: number;

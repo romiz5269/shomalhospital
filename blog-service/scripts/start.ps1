@@ -16,13 +16,17 @@ function Stop-PortListener([int]$port) {
     }
 }
 
+. (Join-Path $PSScriptRoot "..\..\scripts\docker-safe.ps1")
 Write-Host "`n[1/4] Docker: Postgres blog (:5438)" -ForegroundColor Cyan
-docker compose up -d postgres-blog
-docker compose ps
+# NEVER let docker stderr abort this script ($ErrorActionPreference=Stop) — that left :5005 down and homepage without video
+Ensure-InfraContainer -Name "hospital-postgres-blog" -ComposeUpArgs @("compose","up","-d","postgres-blog") | Out-Null
 
 Write-Host "`n[2/4] Wait healthy..." -ForegroundColor Cyan
+$pg = "unknown"
 for ($i = 1; $i -le 30; $i++) {
+    $ErrorActionPreference = "Continue"
     $pg = docker inspect hospital-postgres-blog --format "{{.State.Health.Status}}" 2>$null
+    $ErrorActionPreference = "Stop"
     if ($pg -eq "healthy") { break }
     Start-Sleep 2
 }
@@ -52,4 +56,5 @@ Stop-PortListener $Port
 Write-Host "  Docs:    http://127.0.0.1:$Port/docs" -ForegroundColor Yellow
 Write-Host "  Public:  http://127.0.0.1:$Port/public/posts" -ForegroundColor Yellow
 Write-Host "  Admin:   http://127.0.0.1:8080/api/v1/pages/... (via gateway + JWT)`n" -ForegroundColor Yellow
-uvicorn app.main:app --host 127.0.0.1 --port $Port --reload
+# No --reload in stack mode: reload child can die under redirected logs and leave :5005 empty
+uvicorn app.main:app --host 127.0.0.1 --port $Port

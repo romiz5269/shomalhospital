@@ -32,8 +32,9 @@ type AuthContextValue = {
     password: string;
     first_name?: string;
     last_name?: string;
+    panel?: "patient" | "console" | "cms";
   }) => Promise<{ needsOtp: boolean; otpHint?: string }>;
-  verifySignupOtp: (phone: string, code: string) => Promise<void>;
+  verifySignupOtp: (phone: string, code: string) => Promise<"ok" | "pending_approval">;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
@@ -81,6 +82,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithOtp = useCallback(async (phone: string, code: string) => {
     const res = await verifyOtp(phone, code, "login");
+    if ("pending_approval" in res) {
+      throw new Error("Account not verified — awaiting admin approval");
+    }
     const user = applyAuthResponse(res);
     setUser(user);
     return user;
@@ -100,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: string;
       first_name?: string;
       last_name?: string;
+      panel?: "patient" | "console" | "cms";
     }) => {
       const res = await signup(payload);
       if (res.auto_login && res.user && res.tokens) {
@@ -113,7 +118,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifySignupOtp = useCallback(async (phone: string, code: string) => {
     const res = await verifyOtp(phone, code, "signup");
-    setUser(applyAuthResponse(res));
+    if ("pending_approval" in res && res.pending_approval) {
+      return "pending_approval" as const;
+    }
+    setUser(applyAuthResponse(res as AuthResponse));
+    return "ok" as const;
   }, []);
 
   const logout = useCallback(async () => {

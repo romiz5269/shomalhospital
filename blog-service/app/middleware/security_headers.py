@@ -12,7 +12,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        if request.url.path.startswith("/public/"):
+        # Allow homepage to embed uploaded videos/images cross-origin
+        if request.url.path.startswith("/uploads/"):
+            response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Cache-Control"] = "public, max-age=86400"
+        elif request.url.path.startswith("/public/"):
             response.headers["Cache-Control"] = "public, max-age=60"
         else:
             response.headers["Cache-Control"] = "no-store"

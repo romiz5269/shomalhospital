@@ -1,22 +1,22 @@
 import type { CSSProperties } from "react";
 import { mergeBlockStyles, type BlockStyleConfig } from "@/lib/block-registry";
 
-/** Map 0–100 slider values to CSS */
+/** Map 0–100 slider values to CSS — never widen past the viewport. */
 export function blockStyleToCss(styles: BlockStyleConfig): CSSProperties {
   const py = Math.round((styles.padding_y ?? 50) * 1.2);
-  const px = Math.round((styles.padding_x ?? 50) * 0.32);
-  const maxW = 80 + ((styles.max_width ?? 90) / 100) * 20;
+  const px = Math.min(24, Math.round((styles.padding_x ?? 50) * 0.32));
+  const maxW = Math.min(100, 80 + ((styles.max_width ?? 90) / 100) * 20);
   const glass = (styles.glass ?? 65) / 100;
   const radius = Math.round(((styles.border_radius ?? 50) / 100) * 32);
 
   return {
     paddingTop: `${py}px`,
     paddingBottom: `${py}px`,
-    paddingLeft: `${px}px`,
-    paddingRight: `${px}px`,
-    maxWidth: `${maxW}%`,
-    marginLeft: "auto",
-    marginRight: "auto",
+    paddingInline: `${px}px`,
+    maxWidth: `min(100%, ${maxW}%)`,
+    width: "100%",
+    marginInline: "auto",
+    boxSizing: "border-box",
     ["--block-glass" as string]: String(glass),
     ["--block-radius" as string]: `${radius}px`,
   };

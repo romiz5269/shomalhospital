@@ -16,18 +16,25 @@ function Stop-PortListener([int]$port) {
     }
 }
 
+. (Join-Path $PSScriptRoot "..\..\scripts\docker-safe.ps1")
 Write-Host "`n[1/5] Docker: Postgres + Redis" -ForegroundColor Cyan
-docker compose up -d postgres-auth redis
-docker compose ps
+# docker stderr + ErrorAction Stop was killing auth before uvicorn → whole stack dead
+Ensure-InfraContainer -Name "hospital-redis" -ComposeUpArgs @("compose","up","-d","redis") | Out-Null
+Ensure-InfraContainer -Name "hospital-postgres-auth" -ComposeUpArgs @("compose","up","-d","postgres-auth") | Out-Null
 
 Write-Host "`n[2/5] Wait for healthy..." -ForegroundColor Cyan
+$pg = "unknown"; $rd = "unknown"
 for ($i = 1; $i -le 30; $i++) {
+    $ErrorActionPreference = "Continue"
     $pg = docker inspect hospital-postgres-auth --format "{{.State.Health.Status}}" 2>$null
     $rd = docker inspect hospital-redis --format "{{.State.Health.Status}}" 2>$null
+    $ErrorActionPreference = "Stop"
     if ($pg -eq "healthy" -and $rd -eq "healthy") { break }
     Start-Sleep 2
 }
-$ping = docker exec hospital-redis redis-cli ping
+$ErrorActionPreference = "Continue"
+$ping = docker exec hospital-redis redis-cli ping 2>$null
+$ErrorActionPreference = "Stop"
 Write-Host "Redis: $ping | Postgres: $pg" -ForegroundColor Green
 
 Write-Host "`n[3/5] Python venv + deps" -ForegroundColor Cyan
@@ -52,4 +59,4 @@ Write-Host "`n[5/5] Start Auth" -ForegroundColor Green
 Stop-PortListener $Port
 Write-Host "  Browser: http://127.0.0.1:$Port/docs" -ForegroundColor Yellow
 Write-Host "  Test:    .\scripts\test-interactive.ps1  (2nd terminal)`n" -ForegroundColor Yellow
-uvicorn app.main:app --host 127.0.0.1 --port $Port --reload --log-level info
+uvicorn app.main:app --host 127.0.0.1 --port $Port --log-level info

@@ -3,7 +3,7 @@ import HomePageClient from "@/components/home/HomePageClient";
 import { fetchPublicDoctors, fetchPublicSite } from "@/lib/cms-client";
 import { fetchBlogPosts } from "@/lib/api";
 
-export const revalidate = 60;
+export const revalidate = 0;
 
 export default async function HomePage({
   params,

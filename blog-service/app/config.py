@@ -35,8 +35,17 @@ class Settings(BaseSettings):
     cors_origins: str = (
         "http://localhost:4000,http://127.0.0.1:4000,http://localhost:8080,http://127.0.0.1:8080"
     )
-    upload_dir: str = "./uploads"
+    upload_dir: str = ""  # resolved absolute under blog-service/uploads
+    # Direct blog uploads URL — homepage must not depend on gateway for video bytes
     public_base_url: str = "http://127.0.0.1:5005"
+
+    @property
+    def resolved_upload_dir(self) -> Path:
+        if self.upload_dir:
+            p = Path(self.upload_dir)
+            return p if p.is_absolute() else (Path(__file__).resolve().parents[1] / p).resolve()
+        return (Path(__file__).resolve().parents[1] / "uploads").resolve()
+
 
     @property
     def is_production(self) -> bool:

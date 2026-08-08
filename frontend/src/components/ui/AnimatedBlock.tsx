@@ -16,14 +16,21 @@ type Props = {
   preview?: boolean;
 };
 
+/** Full-bleed sections must not get CMS max-width / side padding — that breaks mobile. */
+const FULL_BLEED = new Set(["hero", "insurance"]);
+
 export default function AnimatedBlock({ block, children, preview = false }: Props) {
   const styles = getStylesFromProps(block.props ?? {});
-  const css = blockStyleToCss(styles);
+  const isFullBleed = FULL_BLEED.has(block.type);
+  const css = isFullBleed ? undefined : blockStyleToCss(styles);
   const vis = blockVisibilityClass(styles);
 
-  if (styles.animation === "none") {
+  if (styles.animation === "none" || isFullBleed) {
     return (
-      <div className={clsx(vis, preview && "pointer-events-none")} style={css}>
+      <div
+        className={clsx(vis, preview && "pointer-events-none", isFullBleed && "w-full max-w-full overflow-x-clip")}
+        style={css}
+      >
         {children}
       </div>
     );
@@ -33,7 +40,7 @@ export default function AnimatedBlock({ block, children, preview = false }: Prop
 
   return (
     <motion.div
-      className={clsx(vis, preview && "pointer-events-none")}
+      className={clsx(vis, preview && "pointer-events-none", "w-full max-w-full min-w-0")}
       style={css}
       initial="hidden"
       whileInView="visible"

@@ -18,6 +18,7 @@ async def list_doctors_admin(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     q: str | None = None,
+    department_code: str | None = None,
     include_deleted: bool = False,
     _: AuthUser = Depends(require_admin()),
 ):
@@ -25,6 +26,7 @@ async def list_doctors_admin(
         page=page,
         page_size=page_size,
         q=q,
+        department_code=department_code,
         include_deleted=include_deleted,
     )
 

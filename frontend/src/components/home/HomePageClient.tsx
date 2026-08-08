@@ -1,9 +1,10 @@
 "use client";
 
-import HeroNikan from "@/components/home/HeroNikan";
+import HeroSection from "@/components/home/HeroSection";
 import AppointmentSteps from "@/components/home/AppointmentSteps";
 import ElectronicServices from "@/components/home/ElectronicServices";
 import StatsBar from "@/components/home/StatsBar";
+import HospitalStatsStrip from "@/components/home/HospitalStatsStrip";
 import InsuranceCarousel from "@/components/home/InsuranceCarousel";
 import PopularDoctors from "@/components/home/PopularDoctors";
 import AboutSection from "@/components/home/AboutSection";
@@ -13,6 +14,7 @@ import AnimatedBlock from "@/components/ui/AnimatedBlock";
 import type { DoctorOut, HomepageBlock, PublicSite } from "@/lib/cms-client";
 import type { BlogPostPublic } from "@/lib/api";
 import clsx from "clsx";
+import { Fragment } from "react";
 
 type Props = {
   site: PublicSite | null;
@@ -34,7 +36,7 @@ function renderBlockContent(
 
   switch (block.type) {
     case "hero":
-      return <HeroNikan site={site} />;
+      return <HeroSection site={site} />;
     case "appointment_steps":
       return <AppointmentSteps />;
     case "electronic_services":
@@ -69,41 +71,50 @@ export default function HomePageClient({
       ? [...site.homepage_blocks].sort((a, b) => a.order - b.order)
       : [
           { id: "hero", type: "hero", enabled: true, order: 0, props: {} },
-          { id: "appointment-steps", type: "appointment_steps", enabled: true, order: 1, props: {} },
-          { id: "electronic-services", type: "electronic_services", enabled: true, order: 2, props: {} },
-          { id: "stats", type: "stats", enabled: true, order: 3, props: {} },
-          { id: "insurance", type: "insurance", enabled: true, order: 4, props: {} },
-          { id: "popular-doctors", type: "popular_doctors", enabled: true, order: 5, props: {} },
-          { id: "about", type: "about", enabled: true, order: 6, props: {} },
-          { id: "news", type: "news", enabled: true, order: 7, props: {} },
-          { id: "faq", type: "faq", enabled: true, order: 8, props: {} },
+          { id: "about", type: "about", enabled: true, order: 1, props: {} },
+          { id: "popular-doctors", type: "popular_doctors", enabled: true, order: 2, props: {} },
+          { id: "electronic-services", type: "electronic_services", enabled: true, order: 3, props: {} },
+          { id: "news", type: "news", enabled: true, order: 4, props: {} },
+          { id: "appointment-steps", type: "appointment_steps", enabled: true, order: 5, props: {} },
+          { id: "insurance", type: "insurance", enabled: true, order: 6, props: {} },
+          { id: "faq", type: "faq", enabled: true, order: 7, props: {} },
         ];
+
+  const hasStatsBlock = blocks.some((b) => b.enabled && b.type === "stats");
 
   return (
     <>
       {blocks.map((block) => {
         if (!block.enabled) return null;
         const selected = preview && selectedBlockId === block.id;
+        const afterAbout = block.type === "about";
         return (
-          <AnimatedBlock key={block.id} block={block} preview={preview}>
-            <div
-              data-block-id={block.id}
-              className={clsx(
-                "relative transition-all",
-                preview && "cursor-pointer hover:outline hover:outline-2 hover:outline-[#003b8e]/30",
-                selected && "outline outline-2 outline-[#2ec4a0] outline-offset-[-2px]",
-              )}
-            >
-              {preview && selected && (
-                <div className="absolute top-2 start-2 z-30 rounded-lg bg-[#2ec4a0] px-2 py-0.5 text-[10px] font-bold text-white pointer-events-none">
-                  {block.type}
-                </div>
-              )}
-              {renderBlockContent(block, site, doctors, posts, locale)}
-            </div>
-          </AnimatedBlock>
+          <Fragment key={block.id}>
+            <AnimatedBlock block={block} preview={preview}>
+              <div
+                data-block-id={block.id}
+                className={clsx(
+                  "relative transition-all",
+                  preview && "cursor-pointer hover:outline hover:outline-2 hover:outline-[#003b8e]/30",
+                  selected && "outline outline-2 outline-[#2ec4a0] outline-offset-[-2px]",
+                )}
+              >
+                {preview && selected && (
+                  <div className="absolute top-2 start-2 z-30 rounded-lg bg-[#2ec4a0] px-2 py-0.5 text-[10px] font-bold text-white pointer-events-none">
+                    {block.type}
+                  </div>
+                )}
+                {renderBlockContent(block, site, doctors, posts, locale)}
+              </div>
+            </AnimatedBlock>
+            {/* Stats sit mid-page (after about), never in hero first viewport */}
+            {afterAbout && !hasStatsBlock && !preview && <HospitalStatsStrip />}
+          </Fragment>
         );
       })}
+      {!hasStatsBlock && !blocks.some((b) => b.enabled && b.type === "about") && !preview && (
+        <HospitalStatsStrip />
+      )}
     </>
   );
 }

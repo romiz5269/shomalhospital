@@ -17,7 +17,13 @@ const isApiProxy = (path: string) => path.startsWith("/api/v1");
 export function createApp() {
   const app = express();
 
-  app.use(helmet());
+  // cross-origin so homepage (:4000) can play CMS videos from gateway (:8080)
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
   app.use(
     cors({
       origin: [
@@ -25,6 +31,8 @@ export function createApp() {
         "http://127.0.0.1:4000",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:2000",
+        "http://127.0.0.1:2000",
       ],
       credentials: true,
       methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],

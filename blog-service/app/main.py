@@ -18,7 +18,7 @@ from app.services.seed import seed_service
 async def lifespan(_app: FastAPI):
     settings = get_settings()
     settings.enforce_production_guards()
-    Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
+    settings.resolved_upload_dir.mkdir(parents=True, exist_ok=True)
     await connect_db()
     await connect_redis()
     await seed_service.seed_sample_posts()
@@ -30,6 +30,9 @@ async def lifespan(_app: FastAPI):
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    upload_dir = settings.resolved_upload_dir
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
     app = FastAPI(
         title=f"{settings.hospital_name} — Pages CMS",
         version="1.0.0",
@@ -60,8 +63,7 @@ def create_app() -> FastAPI:
         }
 
     app.include_router(api_router)
-    Path(settings.upload_dir).mkdir(parents=True, exist_ok=True)
-    app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
+    app.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
     return app
 
 

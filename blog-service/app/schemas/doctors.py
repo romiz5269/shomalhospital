@@ -13,6 +13,7 @@ class DoctorOut(BaseModel):
     image_url: str | None
     bio_fa: str | None
     bio_en: str | None
+    rating: float = 4.5
     is_active: bool
     is_featured: bool
     sort_order: int
@@ -30,6 +31,7 @@ class DoctorCreate(BaseModel):
     image_url: str | None = Field(default=None, max_length=500)
     bio_fa: str | None = Field(default=None, max_length=2000)
     bio_en: str | None = Field(default=None, max_length=2000)
+    rating: float = Field(default=4.5, ge=0, le=5)
     is_active: bool = True
     is_featured: bool = False
     sort_order: int = 0
@@ -44,6 +46,7 @@ class DoctorUpdate(BaseModel):
     image_url: str | None = Field(default=None, max_length=500)
     bio_fa: str | None = Field(default=None, max_length=2000)
     bio_en: str | None = Field(default=None, max_length=2000)
+    rating: float | None = Field(default=None, ge=0, le=5)
     is_active: bool | None = None
     is_featured: bool | None = None
     sort_order: int | None = None

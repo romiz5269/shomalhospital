@@ -114,11 +114,23 @@ class AuthService:
             if email_owner:
                 raise HTTPException(status_code=409, detail="Email already registered")
 
-        role = await db.role.find_unique(where={"name": payload.role})
-        if not role:
-            raise HTTPException(status_code=400, detail=f"Unknown role '{payload.role}'")
+        panel = (payload.panel or "patient").strip().lower()
+        if panel == "console":
+            role_name = "admin"
+        elif panel == "cms":
+            role_name = "cms"
+        else:
+            # Public signup: only patient/doctor — never elevate from client role claim
+            role_name = payload.role if payload.role in ("patient", "doctor") else "patient"
 
-        if payload.role == "doctor":
+        role = await db.role.find_unique(where={"name": role_name})
+        if not role:
+            await rbac_service.seed_defaults()
+            role = await db.role.find_unique(where={"name": role_name})
+        if not role:
+            raise HTTPException(status_code=400, detail=f"Unknown role '{role_name}'")
+
+        if role_name == "doctor":
             assert payload.medical_license_no
             license_owner = await db.doctorprofile.find_unique(
                 where={"medicalLicenseNo": payload.medical_license_no}
@@ -139,11 +151,11 @@ class AuthService:
                 "isVerified": False,
             }
         )
-        await rbac_service.assign_role_to_user(user.id, payload.role)
+        await rbac_service.assign_role_to_user(user.id, role_name)
 
-        if payload.role == "patient":
+        if role_name == "patient":
             await rbac_service.assign_groups_to_user(user.id, ["patients"])
-        elif payload.role == "doctor":
+        elif role_name == "doctor":
             await rbac_service.assign_groups_to_user(user.id, ["doctors"])
             await db.doctorprofile.create(
                 data={
@@ -156,8 +168,14 @@ class AuthService:
 
         otp = await otp_service.issue(payload.phone, purpose="signup")
         settings = get_settings()
+        if panel == "console":
+            msg = "Signup created. Verify OTP to activate admin access."
+        elif panel == "cms":
+            msg = "Signup created. Verify OTP, then wait for system admin approval."
+        else:
+            msg = "Signup created. Verify phone OTP, then wait for admin approval."
         return SignupResponse(
-            message="Signup created. Verify OTP to activate account.",
+            message=msg,
             auto_login=False,
             otp_code=otp.code if settings.expose_otp_code else None,
         )
@@ -191,17 +209,38 @@ class AuthService:
         phone: str,
         code: str,
         purpose: str,
-    ) -> AuthResponse:
+    ):
+        from app.schemas.auth import MessageResponse
+
         await otp_service.verify(phone, code, purpose=purpose)
         user = await db.user.find_unique(where={"phone": phone})
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        if purpose in ("signup", "verify") and not user.isVerified:
+        roles, _, _ = await rbac_service.resolve_user_access(user.id)
+
+        # Console/system-admin signup: OTP activates immediately (no approval).
+        if purpose == "signup" and "admin" in roles:
+            await db.user.update(where={"id": user.id}, data={"isVerified": True})
+            return await self._issue_tokens(user_id=user.id)
+
+        # Patient / CMS signup: phone OK, wait for system-admin approval.
+        if purpose == "signup":
+            return MessageResponse(
+                success=True,
+                message="PENDING_ADMIN_APPROVAL",
+            )
+
+        if purpose == "verify" and not user.isVerified:
             await db.user.update(where={"id": user.id}, data={"isVerified": True})
 
         if purpose == "login" and not user.isVerified:
-            raise HTTPException(status_code=403, detail="Account not verified")
+            # System admins never blocked by approval gate
+            if "admin" not in roles:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Account not verified — awaiting admin approval",
+                )
 
         return await self._issue_tokens(user_id=user.id)
 
@@ -213,7 +252,9 @@ class AuthService:
             raise HTTPException(status_code=401, detail="Invalid credentials")
         if not user.isActive:
             raise HTTPException(status_code=403, detail="User is inactive")
-        if not user.isVerified:
+        roles, _, _ = await rbac_service.resolve_user_access(user.id)
+        # Main system-admin accounts skip approval; CMS/patients need isVerified
+        if not user.isVerified and "admin" not in roles:
             raise HTTPException(status_code=403, detail="Account not verified")
         return await self._issue_tokens(user_id=user.id)
 

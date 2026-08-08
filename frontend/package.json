@@ -4,8 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 4000",
+    "dev:public": "next dev -p 4000",
+    "dev:cms": "next dev -p 3000",
+    "dev:admin": "next dev -p 2000",
+    "dev:system": "next dev -p 2000",
     "build": "next build",
     "start": "next start -p 4000",
+    "start:cms": "next start -p 3000",
+    "start:admin": "next start -p 2000",
     "lint": "eslint"
   },
   "dependencies": {

@@ -2,21 +2,26 @@
 
 import {
   DndContext,
-  closestCenter,
+  DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
+  arrayMove,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
+import { useState } from "react";
 import { GripVertical, Eye, EyeOff, Trash2 } from "lucide-react";
 import type { HomepageBlock } from "@/lib/cms-client";
 import { BLOCK_REGISTRY, getBlockDef } from "@/lib/block-registry";
@@ -30,6 +35,85 @@ type Props = {
   onDelete: (id: string) => void;
   locale: "fa" | "en";
 };
+
+function LayerRow({
+  block,
+  selected,
+  locale,
+  dragHandleProps,
+  setNodeRef,
+  style,
+  isDragging,
+  onSelect,
+  onToggle,
+  onDelete,
+}: {
+  block: HomepageBlock;
+  selected: boolean;
+  locale: "fa" | "en";
+  dragHandleProps?: Record<string, unknown>;
+  setNodeRef?: (node: HTMLElement | null) => void;
+  style?: React.CSSProperties;
+  isDragging?: boolean;
+  onSelect?: () => void;
+  onToggle?: () => void;
+  onDelete?: () => void;
+}) {
+  const def = getBlockDef(block.type);
+  const label = locale === "en" ? def?.labelEn : def?.labelFa;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={clsx(
+        "flex items-center gap-2 rounded-xl border px-2 py-2.5 text-sm transition-shadow select-none",
+        selected ? "border-[#003b8e] bg-[#003b8e]/8 shadow-sm" : "border-gray-200 bg-white",
+        isDragging && "opacity-40",
+        !block.enabled && "opacity-50",
+      )}
+      onClick={onSelect}
+    >
+      <button
+        type="button"
+        className="touch-none p-2 -ms-1 text-gray-400 hover:text-[#003b8e] cursor-grab active:cursor-grabbing shrink-0"
+        aria-label="Drag"
+        {...(dragHandleProps || {})}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical className="h-5 w-5" />
+      </button>
+      <span className="text-base pointer-events-none">{def?.icon ?? "📦"}</span>
+      <span className="flex-1 truncate font-medium text-[#0a1628] pointer-events-none">
+        {label ?? block.type}
+      </span>
+      {onToggle && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle();
+          }}
+          className="p-1.5 text-gray-400 hover:text-[#003b8e]"
+        >
+          {block.enabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
+      )}
+      {onDelete && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="p-1.5 text-gray-400 hover:text-red-500"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 function SortableLayer({
   block,
@@ -49,52 +133,24 @@ function SortableLayer({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: block.id,
   });
-  const def = getBlockDef(block.type);
-  const label = locale === "en" ? def?.labelEn : def?.labelFa;
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={clsx(
-        "flex items-center gap-2 rounded-xl border px-2 py-2 text-sm transition-all cursor-pointer",
-        selected ? "border-[#003b8e] bg-[#003b8e]/8 shadow-sm" : "border-gray-200 bg-white hover:border-[#003b8e]/30",
-        isDragging && "opacity-60 shadow-lg z-50",
-        !block.enabled && "opacity-50",
-      )}
-      onClick={onSelect}
-    >
-      <button
-        type="button"
-        className="touch-none p-1 text-gray-400 hover:text-[#003b8e] cursor-grab active:cursor-grabbing"
-        {...attributes}
-        {...listeners}
-        aria-label="Drag"
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
-      <span className="text-base">{def?.icon ?? "📦"}</span>
-      <span className="flex-1 truncate font-medium text-[#0a1628]">{label ?? block.type}</span>
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onToggle(); }}
-        className="p-1 text-gray-400 hover:text-[#003b8e]"
-      >
-        {block.enabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-      </button>
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onDelete(); }}
-        className="p-1 text-gray-400 hover:text-red-500"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
-    </div>
+    <LayerRow
+      block={block}
+      selected={selected}
+      locale={locale}
+      setNodeRef={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 20 : undefined,
+      }}
+      isDragging={isDragging}
+      dragHandleProps={{ ...attributes, ...listeners }}
+      onSelect={onSelect}
+      onToggle={onToggle}
+      onDelete={onDelete}
+    />
   );
 }
 
@@ -107,27 +163,41 @@ export default function BuilderLayerList({
   onDelete,
   locale,
 }: Props) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    setActiveId(null);
     if (!over || active.id === over.id) return;
     const oldIndex = blocks.findIndex((b) => b.id === active.id);
     const newIndex = blocks.findIndex((b) => b.id === over.id);
     if (oldIndex < 0 || newIndex < 0) return;
-    const next = [...blocks];
-    const [moved] = next.splice(oldIndex, 1);
-    next.splice(newIndex, 0, moved);
-    onReorder(next.map((b, i) => ({ ...b, order: i })));
+    const next = arrayMove(blocks, oldIndex, newIndex).map((b, i) => ({ ...b, order: i }));
+    onReorder(next);
   };
 
+  const activeBlock = activeId ? blocks.find((b) => b.id === activeId) : null;
+
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setActiveId(null)}
+    >
       <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 touch-pan-y">
           {blocks.map((block) => (
             <SortableLayer
               key={block.id}
@@ -141,6 +211,13 @@ export default function BuilderLayerList({
           ))}
         </div>
       </SortableContext>
+      <DragOverlay dropAnimation={null}>
+        {activeBlock ? (
+          <div className="shadow-2xl rounded-xl ring-2 ring-[#003b8e]/40">
+            <LayerRow block={activeBlock} selected locale={locale} />
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }

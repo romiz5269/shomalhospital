@@ -49,7 +49,7 @@ class RbacService:
                     permission_codes.add(rp.permission.code)
 
         # primary role for gateway `role` claim: prefer admin > doctor > nurse > patient
-        priority = ["admin", "doctor", "nurse", "staff", "patient"]
+        priority = ["admin", "cms", "doctor", "nurse", "staff", "patient"]
         ordered = sorted(
             role_names,
             key=lambda r: priority.index(r) if r in priority else 99,
@@ -170,6 +170,13 @@ class RbacService:
                 "appointment:read",
                 "pages:read",
                 "media:read",
+            ],
+            "cms": [
+                "pages:read",
+                "pages:write",
+                "media:read",
+                "media:write",
+                "blog:manage",
             ],
             "patient": [
                 "appointment:read",

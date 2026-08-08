@@ -66,11 +66,27 @@ export async function gatewayFetch<T>(
   return data as T;
 }
 
+/** Convert Persian/Arabic digits and normalize IR mobile to 09xxxxxxxxx */
 export function normalizePhone(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
+  const map: Record<string, string> = {
+    "۰": "0", "۱": "1", "۲": "2", "۳": "3", "۴": "4",
+    "۵": "5", "۶": "6", "۷": "7", "۸": "8", "۹": "9",
+    "٠": "0", "١": "1", "٢": "2", "٣": "3", "٤": "4",
+    "٥": "5", "٦": "6", "٧": "7", "٨": "8", "٩": "9",
+  };
+  const latin = phone.replace(/[۰-۹٠-٩]/g, (ch) => map[ch] ?? ch);
+  const digits = latin.replace(/\D/g, "");
   if (digits.startsWith("98") && digits.length === 12) return `0${digits.slice(2)}`;
   if (digits.startsWith("9") && digits.length === 10) return `0${digits}`;
   return digits;
+}
+
+export function assertIranMobile(phone: string): string {
+  const n = normalizePhone(phone);
+  if (!/^09\d{9}$/.test(n)) {
+    throw new Error("شماره موبایل را کامل وارد کنید (مثلاً 09123456789).");
+  }
+  return n;
 }
 
 async function authRequest<T>(
@@ -90,12 +106,13 @@ async function authRequest<T>(
 }
 
 export async function loginPassword(phone: string, password: string) {
+  const normalized = assertIranMobile(phone);
   return authRequest<AuthResponse>(
     "/login",
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: normalizePhone(phone), password }),
+      body: JSON.stringify({ phone: normalized, password }),
     },
     "Login failed",
   );
@@ -105,7 +122,7 @@ export async function requestOtp(phone: string, purpose: "login" | "signup" | "v
   const res = await fetch(`${API.auth}/otp/request`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone, purpose }),
+    body: JSON.stringify({ phone: assertIranMobile(phone), purpose }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(parseApiError(data, "OTP request failed"));
@@ -116,14 +133,21 @@ export async function verifyOtp(
   phone: string,
   code: string,
   purpose: "login" | "signup" | "verify",
-) {
+): Promise<AuthResponse | { pending_approval: true; message: string }> {
   const res = await fetch(`${API.auth}/otp/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone, code, purpose }),
+    body: JSON.stringify({ phone: assertIranMobile(phone), code: code.trim(), purpose }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(parseApiError(data, "OTP verification failed"));
+  if (
+    purpose === "signup" &&
+    data?.message === "PENDING_ADMIN_APPROVAL" &&
+    !data?.tokens
+  ) {
+    return { pending_approval: true, message: data.message as string };
+  }
   return data as AuthResponse;
 }
 
@@ -133,11 +157,23 @@ export async function signup(payload: {
   first_name?: string;
   last_name?: string;
   email?: string;
+  panel?: "patient" | "console" | "cms";
+  role?: string;
 }) {
+  const panel = payload.panel ?? "patient";
+  const role = panel === "patient" ? payload.role ?? "patient" : undefined;
   const res = await fetch(`${API.auth}/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...payload, role: "patient" }),
+    body: JSON.stringify({
+      phone: assertIranMobile(payload.phone),
+      password: payload.password,
+      first_name: payload.first_name,
+      last_name: payload.last_name,
+      email: payload.email,
+      panel,
+      ...(role ? { role } : {}),
+    }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(parseApiError(data, "Signup failed"));

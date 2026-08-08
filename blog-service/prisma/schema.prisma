@@ -72,6 +72,7 @@ model Doctor {
   imageUrl       String?
   bioFa          String?
   bioEn          String?
+  rating         Float     @default(4.5)
   isActive       Boolean   @default(true)
   isFeatured     Boolean   @default(false)
   sortOrder      Int       @default(0)

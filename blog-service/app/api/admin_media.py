@@ -36,7 +36,7 @@ async def upload_media(
     if len(content) > max_size:
         raise HTTPException(status_code=400, detail="حجم فایل بیش از حد مجاز است")
 
-    upload_dir = Path(settings.upload_dir)
+    upload_dir = settings.resolved_upload_dir
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     safe_name = f"{uuid.uuid4().hex}{ext}"
@@ -61,7 +61,7 @@ async def delete_media(
     _: AuthUser = Depends(require_admin()),
 ):
     settings = get_settings()
-    path = Path(settings.upload_dir) / Path(filename).name
+    path = settings.resolved_upload_dir / Path(filename).name
     if path.is_file():
         path.unlink()
     return MessageResponse(message="Deleted")

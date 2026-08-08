@@ -1,28 +1,33 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
+from typing import Annotated
+
+from pydantic import BaseModel, BeforeValidator, EmailStr, Field, field_validator, model_validator
 
 from app.utils.national_id import normalize_national_id
+from app.utils.phone import normalize_otp_code, normalize_phone as normalize_ir_phone
+
+
+def _phone_before(value: object) -> str:
+    return normalize_ir_phone(str(value or ""))
+
+
+# Normalize Persian/Arabic digits BEFORE min_length checks
+PhoneStr = Annotated[str, BeforeValidator(_phone_before), Field(min_length=10, max_length=15)]
 
 
 class SignupRequest(BaseModel):
-    phone: str = Field(min_length=10, max_length=20)
+    phone: PhoneStr
     email: EmailStr | None = None
     national_id: str | None = Field(default=None, max_length=10)
     first_name: str | None = Field(default=None, max_length=80)
     last_name: str | None = Field(default=None, max_length=80)
     password: str | None = Field(default=None, min_length=8, max_length=128)
     role: str = Field(default="patient", max_length=64)
+    # patient | console (system admin, auto-approve) | cms (needs admin approval)
+    panel: str = Field(default="patient", pattern="^(patient|console|cms)$")
     # doctor-only
     medical_license_no: str | None = Field(default=None, max_length=64)
     biography: str | None = Field(default=None, max_length=5000)
     specialty: str | None = Field(default=None, max_length=120)
-
-    @field_validator("phone")
-    @classmethod
-    def normalize_phone(cls, value: str) -> str:
-        digits = "".join(ch for ch in value if ch.isdigit() or ch == "+")
-        if len(digits) < 10:
-            raise ValueError("Invalid phone number")
-        return digits
 
     @field_validator("national_id")
     @classmethod
@@ -48,43 +53,24 @@ class NationalIdUpdate(BaseModel):
 
 
 class OtpRequest(BaseModel):
-    phone: str = Field(min_length=10, max_length=20)
+    phone: PhoneStr
     purpose: str = Field(default="login", pattern="^(login|signup|verify)$")
-
-    @field_validator("phone")
-    @classmethod
-    def normalize_phone(cls, value: str) -> str:
-        digits = "".join(ch for ch in value if ch.isdigit() or ch == "+")
-        if len(digits) < 10:
-            raise ValueError("Invalid phone number")
-        return digits
 
 
 class OtpVerifyRequest(BaseModel):
-    phone: str = Field(min_length=10, max_length=20)
-    code: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    phone: PhoneStr
+    code: str = Field(min_length=6, max_length=6)
     purpose: str = Field(default="login", pattern="^(login|signup|verify)$")
 
-    @field_validator("phone")
+    @field_validator("code", mode="before")
     @classmethod
-    def normalize_phone(cls, value: str) -> str:
-        digits = "".join(ch for ch in value if ch.isdigit() or ch == "+")
-        if len(digits) < 10:
-            raise ValueError("Invalid phone number")
-        return digits
+    def normalize_code(cls, value: object) -> str:
+        return normalize_otp_code(str(value or ""))
 
 
 class LoginPasswordRequest(BaseModel):
-    phone: str = Field(min_length=10, max_length=20)
+    phone: PhoneStr
     password: str = Field(min_length=8, max_length=128)
-
-    @field_validator("phone")
-    @classmethod
-    def normalize_phone(cls, value: str) -> str:
-        digits = "".join(ch for ch in value if ch.isdigit() or ch == "+")
-        if len(digits) < 10:
-            raise ValueError("Invalid phone number")
-        return digits
 
 
 class RefreshRequest(BaseModel):

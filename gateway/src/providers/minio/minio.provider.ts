@@ -24,17 +24,18 @@ export class MinioProvider {
 
   async healthCheck(): Promise<boolean> {
     try {
-      const buckets = await this.client.listBuckets();
-
+      const buckets = await Promise.race([
+        this.client.listBuckets(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("MinIO health timeout")), 2500),
+        ),
+      ]);
       console.log(
         "MinIO buckets:",
         buckets.map((bucket) => bucket.name),
       );
-
       return true;
-    } catch (error) {
-      console.error("MinIO ERROR:", error);
-
+    } catch {
       return false;
     }
   }

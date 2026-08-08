@@ -3,6 +3,9 @@
 سایت رسمی و پورتال **بیمارستان تخصصی شمال — آمل، مازندران**  
 برند رنگ: `#003B8E` · طراحی شیشه‌ای · هیرو ویدیویی · CMS صفحه‌ساز · نوبت‌دهی آنلاین
 
+> **نصب از صفر (دیتابیس، Redis، کتابخانه‌ها، seed، اجرا):** ببینید [`SETUP.md`](./SETUP.md)  
+> **یادداشت پروداکشن:** [`PRODUCTION.md`](./PRODUCTION.md)
+
 ---
 
 ## فهرست
@@ -58,7 +61,9 @@ API Gateway :8080         Blog public :5005
 
 | سرویس | پورت | نقش |
 |--------|------|-----|
-| **Frontend** (Next.js) | `4000` | سایت فارسی/انگلیسی |
+| **Frontend** (Next.js) | `4000` | سایت عمومی بیماران |
+| **System admin** (همان Next) | `2000` | داشبورد سیستم، کاربران، نوبت‌ها، پزشکان |
+| **CMS** (همان Next) | `3000` | صفحه‌ساز و محتوای سایت |
 | **Gateway** (Express) | `8080` | JWT، پروکسی، CORS |
 | **auth-service** | `5001` | ثبت‌نام، OTP، لاگین، JWT |
 | **users-service** | `5002` | پروفایل کاربران |
@@ -83,18 +88,19 @@ cd "C:\Users\yasin\Desktop\hospital site"
 .\scripts\run-stack.ps1
 ```
 
-این اسکریپت:
+این اسکریپت (یک پنجره):
 
 1. پورت‌های اشغال‌شده را آزاد می‌کند
 2. کلید JWT را با گیت‌وی همگام می‌کند (`sync-jwt-key.ps1`)
-3. هر سرویس را در **پنجره PowerShell جدا** با `scripts\start.ps1` خودش بالا می‌آورد
-
-بعد از چند دقیقه این‌ها را باز کنید:
+3. همه سرویس‌ها را در پس‌زمینه بالا می‌آورد (لاگ در `.run-logs/`)
+4. هر ۱۲ ثانیه وضعیت سلامت را چاپ می‌کند — با Ctrl+C کل استک قطع می‌شود
 
 | صفحه | آدرس |
 |------|------|
 | سایت فارسی | http://localhost:4000/fa |
 | سایت انگلیسی | http://localhost:4000/en |
+| **پنل سیستم (ادمین)** | http://localhost:2000/fa/console |
+| CMS / صفحه‌ساز | http://localhost:3000/fa/admin |
 | سلامت گیت‌وی | http://127.0.0.1:8080/health |
 
 ---
@@ -169,7 +175,8 @@ npm run dev
 | نوبت‌دهی | http://localhost:4000/fa/appointments |
 | پزشکان | http://localhost:4000/fa/doctors |
 | اخبار | http://localhost:4000/fa/blog |
-| **پنل CMS** | http://localhost:4000/fa/admin |
+| **پنل سیستم** | http://localhost:2000/fa/console |
+| **CMS / صفحه‌ساز** | http://localhost:3000/fa/admin |
 | Gateway Health | http://127.0.0.1:8080/health |
 | Auth Docs | http://127.0.0.1:5001/docs |
 | CMS Public Site | http://127.0.0.1:5005/public/site |
@@ -178,25 +185,25 @@ npm run dev
 
 ---
 
-## 6. ورود ادمین و CMS
+## 6. ورود ادمین، پنل سیستم و CMS
 
-### حساب ادمین (seed خودکار)
+ورود بیماران روی `:4000/fa/login` است و **رمز ادمین آنجا نمایش داده نمی‌شود**.
+
+ثبت‌نام بیماران → تأیید OTP موبایل → **تأیید نهایی توسط ادمین سیستم** در پنل `:3000`.
+
+### حساب ادمین (seed خودکار — فقط برای پنل سیستم)
 
 | فیلد | مقدار |
 |------|--------|
 | موبایل | `09000000000` |
 | رمز عبور | `Admin@12345` |
 
-### مسیر کار با CMS
+### مسیر کار
 
-1. برو به http://localhost:4000/fa/login
-2. با حساب بالا وارد شو
-3. برو به http://localhost:4000/fa/admin
-4. تب‌ها:
-   - **تنظیمات سایت** — عنوان هیرو، ویدیو، پوستر
-   - **سازنده صفحه** — drag & drop بلوک‌ها، قالب‌ها، پیش‌نمایش موبایل/تبلت/دسکتاپ
-   - **پزشکان** — CRUD پزشکان
-   - **بلاگ** — لیست مطالب
+1. برو به http://localhost:2000/fa/console/login
+2. با حساب ادمین وارد شو
+3. در **داشبورد سیستم**: ترافیک، سلامت سرویس‌ها، لاگ، کاربران، تأیید نوبت، پزشکان
+4. CMS / صفحه‌ساز جداست → http://localhost:3000/fa/admin
 
 > برای دسترسی ادمین نقش `admin` یا مجوزهایی مثل `pages:write` / `auth:manage` لازم است.
 
@@ -421,7 +428,8 @@ Invoke-WebRequest http://localhost:4000/fa
 cd "C:\Users\yasin\Desktop\hospital site"
 .\scripts\run-stack.ps1
 # سپس: http://localhost:4000/fa
-# ادمین: 09000000000 / Admin@12345 → /fa/admin
+# ادمین سیستم: http://localhost:2000/fa/console/login
+# CMS: http://localhost:3000/fa/admin
 ```
 
 ---

@@ -10,6 +10,9 @@
 
 # Next.js / Node build
 **/.next/
+**/.next-public/
+**/.next-cms/
+**/.next-admin/
 **/out/
 **/dist/
 **/build/
@@ -58,3 +61,4 @@ coverage/
 *.log
 tmp/
 temp/
+.run-logs/

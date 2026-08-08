@@ -19,8 +19,8 @@ import BlogFeaturedCard from "@/components/blog/BlogFeaturedCard";
 
 const COPY = {
   fa: {
-    label: "رسانه",
-    title: "اخبار و وبلاگ",
+    label: "اخبار و مقالات",
+    title: "تازه‌های سلامت",
     subtitle: "آخرین اخبار، رویدادها و مطالب آموزشی بیمارستان شمال",
     viewAll: "مشاهده همه",
     readMore: "ادامه مطلب",
@@ -66,8 +66,8 @@ export default function NewsTabsSection({ initialPosts = [], blockProps }: Props
       <div className="mx-auto max-w-7xl relative">
         <div className="flex flex-wrap items-end justify-between gap-6 mb-8">
           <div>
-            <p className="text-shomal-accent font-semibold text-sm mb-2 tracking-wide uppercase">{c.label}</p>
-            <h2 className="heading-section text-3xl sm:text-4xl mb-2">{title}</h2>
+            <p className="eyebrow mb-2">{c.label}</p>
+            <h2 className="heading-section mb-2">{title}</h2>
             {subtitle && <p className="text-muted max-w-2xl leading-relaxed">{subtitle}</p>}
             <div className="mt-4 h-1 w-16 gradient-shomal rounded-full" />
           </div>

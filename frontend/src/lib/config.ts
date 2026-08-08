@@ -16,9 +16,8 @@ export const API = {
     "http://127.0.0.1:8080/api/v1/appointment",
 };
 
-export const HERO_VIDEO =
-  process.env.NEXT_PUBLIC_HERO_VIDEO_URL ||
-  "https://assets.mixkit.co/videos/preview/mixkit-team-of-doctors-in-a-hospital-corridor-42774-large.mp4";
+/** Legacy stock fallback only — homepage HeroSection must NOT use this when CMS has a video. */
+export const HERO_VIDEO = process.env.NEXT_PUBLIC_HERO_VIDEO_URL || "";
 
 export const HERO_POSTER =
   "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1920&q=80";

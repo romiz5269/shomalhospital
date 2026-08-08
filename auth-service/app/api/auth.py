@@ -38,8 +38,9 @@ async def otp_request(payload: OtpRequest, request: Request):
     return MessageResponse(message=message, otp_code=otp_code)
 
 
-@router.post("/otp/verify", response_model=AuthResponse)
+@router.post("/otp/verify")
 async def otp_verify(payload: OtpVerifyRequest):
+    """Login/verify → AuthResponse; signup OTP → MessageResponse (pending admin)."""
     return await auth_service.verify_otp(
         phone=payload.phone,
         code=payload.code,

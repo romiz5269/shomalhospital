@@ -63,9 +63,32 @@ export type ApiError = {
 
 export function parseApiError(data: unknown, fallback: string): string {
   if (!data || typeof data !== "object") return fallback;
-  const err = data as ApiError;
-  if (typeof err.detail === "string") return err.detail;
-  if (typeof err.message === "string") return err.message;
-  if (Array.isArray(err.detail) && err.detail[0]?.msg) return err.detail[0].msg;
+  const err = data as ApiError & { detail?: unknown };
+  if (typeof err.message === "string") return mapPydanticMsg(err.message);
+  if (typeof err.detail === "string") return mapPydanticMsg(err.detail);
+  if (Array.isArray(err.detail) && err.detail.length > 0) {
+    const first = err.detail[0] as { msg?: string };
+    if (first?.msg) return mapPydanticMsg(first.msg);
+  }
   return fallback;
+}
+
+function mapPydanticMsg(msg: string): string {
+  const lower = msg.toLowerCase();
+  if (lower.includes("at least 10") || (lower.includes("string should have at least") && lower.includes("10"))) {
+    return "شماره موبایل را کامل وارد کنید (مثلاً 09123456789).";
+  }
+  if (lower.includes("at least 8") && lower.includes("string")) {
+    return "رمز عبور حداقل ۸ کاراکتر باشد.";
+  }
+  if (lower.includes("invalid phone") || lower.includes("invalid phone number")) {
+    return "شماره موبایل معتبر نیست.";
+  }
+  if (lower.includes("value error, invalid phone")) {
+    return "شماره موبایل معتبر نیست.";
+  }
+  if (lower.includes("invalid credentials")) {
+    return "شماره یا رمز عبور اشتباه است.";
+  }
+  return msg;
 }
