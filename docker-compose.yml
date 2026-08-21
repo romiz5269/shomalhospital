@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: north_hospital_pm_db
+    environment:
+      POSTGRES_USER: pm_user
+      POSTGRES_PASSWORD: pm_pass
+      POSTGRES_DB: north_hospital_pm
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pm_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pm_user -d north_hospital_pm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: north_hospital_logs_db
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - pm_mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: pm_logs
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: north_hospital_pm_backend
+    environment:
+      # اسم سرویس‌ها (postgres/mongo) به عنوان host، چون داخل شبکه داکر هستن
+      DATABASE_URL: postgresql://pm_user:pm_pass@postgres:5432/north_hospital_pm
+      MONGO_URL: mongodb://mongo:27017/pm_logs
+    ports:
+      - "127.0.0.1:8001:8001"
+    volumes:
+      - pm_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # این مقدار موقع build توی کد فرانت baked میشه و توی مرورگر کاربر اجرا میشه
+        # پس باید localhost باشه نه اسم سرویس داکر
+        NEXT_PUBLIC_API_URL: http://localhost:8001/api
+    container_name: north_hospital_pm_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pm_postgres_data:
+  pm_mongo_data:
+  pm_uploads:
