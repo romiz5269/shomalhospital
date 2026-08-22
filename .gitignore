@@ -1,0 +1,25 @@
+# فایل‌های ویدیویی موقت (ورودی/خروجی کاربران) - نباید توی گیت باشن
+storage/uploads/
+storage/outputs/
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# کش پایتون
+__pycache__/
+*.pyc
+*.pyo
+
+# محیط مجازی
+.venv/
+venv/
+env/
+
+# فایل‌های سیستمی/ویرایشگر
+.DS_Store
+.vscode/
+.idea/
+
+# لاگ‌ها
+*.log
